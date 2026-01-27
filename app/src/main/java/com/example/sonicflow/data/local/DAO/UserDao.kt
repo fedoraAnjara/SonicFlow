@@ -1,8 +1,9 @@
-package com.example.sonicflow.data.local
+package com.example.sonicflow.data.local.DAO
 
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import com.example.sonicflow.data.local.Entity.UserEntity
 
 @Dao
 interface UserDao {

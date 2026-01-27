@@ -1,4 +1,4 @@
-package com.example.sonicflow.data.local
+package com.example.sonicflow.data.local.Entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
