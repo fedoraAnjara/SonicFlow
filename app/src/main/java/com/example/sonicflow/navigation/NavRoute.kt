@@ -21,7 +21,7 @@ fun NavRoute(
         composable(route = Screen.Splash.route){
             SplashScreen(
                 onSplashFinished = {
-                    navController.navigate(Screen.SignIn.route) {
+                    navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 }

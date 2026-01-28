@@ -1,3 +1,30 @@
 <resources>
     <string name="app_name">SonicFlow</string>
+
+    <!-- Sign In -->
+    <string name="sign_in_title">Connexion</string>
+    <string name="email">Email</string>
+    <string name="password">Mot de passe</string>
+    <string name="sign_in_button">Se connecter</string>
+    <string name="no_account">Pas encore de compte ? S\'inscrire</string>
+
+    <!-- Sign Up -->
+    <string name="sign_up_title">Inscription</string>
+    <string name="first_name">Prénom</string>
+    <string name="last_name">Nom</string>
+    <string name="email_address">Adresse email</string>
+    <string name="confirm_password">Confirmer le mot de passe</string>
+    <string name="sign_up_button">S\'inscrire</string>
+    <string name="already_have_account">Déjà un compte ? Se connecter</string>
+
+    <!-- Home -->
+    <string name="my_library">Ma Bibliothèque</string>
+    <string name="no_music_found">Aucune musique trouvée</string>
+    <string name="error_label">Erreur: %1$s</string>
+    <string name="retry">Réessayer</string>
+
+    <!-- Permissions -->
+    <string name="permission_required">Permission requise</string>
+    <string name="permission_message">L\'accès aux fichiers audio est nécessaire pour afficher vos musiques.</string>
+    <string name="allow_access">Autoriser l\'accès</string>
 </resources>

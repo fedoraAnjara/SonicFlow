@@ -9,6 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.sonicflow.R
 
 @Composable
 fun SignUpScreen(
@@ -29,7 +31,7 @@ fun SignUpScreen(
         verticalArrangement = Arrangement.Center
     ){
         Text(
-            text = "Sign Up",
+            text = stringResource(R.string.sign_up_title),
             style = MaterialTheme.typography.headlineLarge
         )
         Spacer(modifier = Modifier.height(32.dp))
@@ -37,7 +39,7 @@ fun SignUpScreen(
         OutlinedTextField(
             value = firstName,
             onValueChange = { firstName = it },
-            label = { Text("First Name") },
+            label = { Text(stringResource(R.string.first_name)) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -45,7 +47,7 @@ fun SignUpScreen(
         OutlinedTextField(
             value = lastName,
             onValueChange = { lastName = it },
-            label = { Text("Last Name") },
+            label = { Text(stringResource(R.string.last_name)) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -53,7 +55,7 @@ fun SignUpScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email Adress") },
+            label = { Text(stringResource(R.string.email)) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -61,7 +63,7 @@ fun SignUpScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.password)) },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
@@ -70,7 +72,7 @@ fun SignUpScreen(
         OutlinedTextField(
             value = confirmedPassword,
             onValueChange = { confirmedPassword = it },
-            label = { Text("Confirm your password") },
+            label = { Text(stringResource(R.string.confirm_password)) },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
@@ -82,11 +84,11 @@ fun SignUpScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "Sign Up")
+            Text(stringResource(R.string.sign_up_button))
         }
         Spacer(modifier = Modifier.height(16.dp))
         TextButton(onClick = onNavigateToSignIn) {
-            Text("Already have an account? Sign In")
+            Text(stringResource(R.string.already_have_account))
         }
     }
 }

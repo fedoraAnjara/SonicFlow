@@ -8,6 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.example.sonicflow.R
 
 @Composable
 fun SignInScreen(
@@ -25,7 +27,7 @@ fun SignInScreen(
         horizontalAlignment = Alignment.CenterHorizontally
     ){
         Text(
-            text = "Sign In",
+            text = stringResource(R.string.sign_in_title),
             style = MaterialTheme.typography.headlineLarge
         )
         Spacer(modifier = Modifier.height(32.dp))
@@ -33,7 +35,7 @@ fun SignInScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Email") },
+            label = { Text(stringResource(R.string.email)) },
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -41,7 +43,7 @@ fun SignInScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Password") },
+            label = { Text(stringResource(R.string.password)) },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
@@ -54,12 +56,12 @@ fun SignInScreen(
             },
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text(text = "Sign In")
+            Text(stringResource(R.string.sign_in_button))
         }
         Spacer(modifier = Modifier.height(16.dp))
 
         TextButton(onClick = onNavigateToSignUp) {
-            Text("Don't have an account? Sign Up")
+            Text(stringResource(R.string.no_account))
         }
     }
 }
