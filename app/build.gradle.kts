@@ -67,6 +67,7 @@ dependencies {
     ksp(libs.hilt.compiler)
     implementation(libs.hilt.navigation.compose)
 
+    implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation("androidx.compose.ui:ui-text-google-fonts:1.9.2")
 }
