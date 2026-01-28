@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.ContentUris
 import android.net.Uri
 import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -24,11 +25,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.util.TimeUtils.formatDuration
 import com.example.sonicflow.R
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
+import androidx.compose.material.icons.filled.Add
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -61,7 +66,9 @@ fun HomeScreen(
         state = state,
         onRetry = {viewModel.loadAudioTracks()},
         hasPermission = permissionState.status.isGranted,
-        onRequestPermission = {permissionState.launchPermissionRequest()}
+        onRequestPermission = { permissionState.launchPermissionRequest() },
+        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+        onSortTypeChange = { viewModel.onSortTypeChange(it) }
     )
 }
 
@@ -70,20 +77,108 @@ fun AudioListContent(
     state: HomeState,
     onRetry: () -> Unit,
     hasPermission: Boolean,
-    onRequestPermission: () -> Unit
+    onRequestPermission: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onSortTypeChange: (SortType) -> Unit
 ) {
+    var showSortMenu by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
+
         Text(
             text = stringResource(R.string.my_library),
             style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(16.dp,52.dp,16.dp,16.dp)
+            modifier = Modifier.padding(16.dp, 52.dp, 16.dp, 8.dp)
         )
+
+        if (hasPermission && state.audioTracks.isNotEmpty()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = state.searchQuery,
+                    onValueChange = onSearchQueryChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text(stringResource(R.string.search_music)) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = stringResource(R.string.search_music)
+                        )
+                    },
+                    trailingIcon = {
+                        if (state.searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { onSearchQueryChange("") }) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Clear"
+                                )
+                            }
+                        }
+                    },
+                    singleLine = true,
+                    shape = RoundedCornerShape(24.dp)
+                )
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Box {
+                    IconButton(
+                        onClick = { showSortMenu = true },
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(
+                                color = MaterialTheme.colorScheme.surfaceVariant,
+                                shape = RoundedCornerShape(16.dp)
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Sort"
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showSortMenu,
+                        onDismissRequest = { showSortMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.sort_title_asc)) },
+                            onClick = {
+                                onSortTypeChange(SortType.TITLE_ASC)
+                                showSortMenu = false
+                            },
+                            leadingIcon = {
+                                if (state.sortType == SortType.TITLE_ASC) {
+                                    Icon(Icons.Default.Check, contentDescription = null)
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.sort_artist)) },
+                            onClick = {
+                                onSortTypeChange(SortType.ARTIST_ASC)
+                                showSortMenu = false
+                            },
+                            leadingIcon = {
+                                if (state.sortType == SortType.ARTIST_ASC) {
+                                    Icon(Icons.Default.Check, contentDescription = null)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
 
         when {
             !hasPermission -> {
-                6
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -129,12 +224,18 @@ fun AudioListContent(
                     }
                 }
             }
-            state.audioTracks.isEmpty() -> {
+            state.filteredTracks.isEmpty() -> {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(stringResource(R.string.no_music_found))
+                    Text(
+                        text = if (state.searchQuery.isEmpty()) {
+                            stringResource(R.string.no_music_found)
+                        } else {
+                            stringResource(R.string.no_results)
+                        }
+                    )
                 }
             }
             else -> {
@@ -142,7 +243,7 @@ fun AudioListContent(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
-                    items(state.audioTracks) { track ->
+                    items(state.filteredTracks) { track ->
                         AudioTrackItem(track = track)
                     }
                 }

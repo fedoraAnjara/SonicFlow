@@ -27,6 +27,13 @@
     <string name="share">Partager</string>
     <string name="details">Détails</string>
     <string name="delete">Supprimer</string>
+    <string name="search_music">Rechercher</string>
+    <string name="sort_title_asc">Trier par titre</string>
+    <string name="sort_artist">Trier par artiste</string>
+    <string name="no_results">Aucun résultat</string>
+
+
+
 
     <!-- Permissions -->
     <string name="permission_required">Permission requise</string>
