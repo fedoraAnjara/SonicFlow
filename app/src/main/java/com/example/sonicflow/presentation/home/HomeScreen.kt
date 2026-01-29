@@ -94,22 +94,27 @@ fun AudioListContent(
         )
 
         if (hasPermission && state.audioTracks.isNotEmpty()) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp),
             ) {
                 OutlinedTextField(
                     value = state.searchQuery,
                     onValueChange = onSearchQueryChange,
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text(stringResource(R.string.search_music)) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp),
+                    placeholder = {
+                        Text(
+                        text = stringResource(R.string.search_music),
+                        style = MaterialTheme.typography.bodyMedium
+                    ) },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search_music)
+                            contentDescription = stringResource(R.string.search_music) ,
+                            modifier = Modifier.size(20.dp)
                         )
                     },
                     trailingIcon = {
@@ -117,63 +122,40 @@ fun AudioListContent(
                             IconButton(onClick = { onSearchQueryChange("") }) {
                                 Icon(
                                     imageVector = Icons.Default.Clear,
-                                    contentDescription = "Clear"
+                                    contentDescription = "Clear",
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         }
                     },
                     singleLine = true,
-                    shape = RoundedCornerShape(24.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+                    ),
+                    textStyle = MaterialTheme.typography.bodyMedium
                 )
 
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-                Box {
-                    IconButton(
-                        onClick = { showSortMenu = true },
-                        modifier = Modifier
-                            .size(56.dp)
-                            .background(
-                                color = MaterialTheme.colorScheme.surfaceVariant,
-                                shape = RoundedCornerShape(16.dp)
-                            )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Add,
-                            contentDescription = "Sort"
-                        )
-                    }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SortChip(
+                        text = stringResource(R.string.sort_title_asc),
+                        isSelected = state.sortType == SortType.TITLE_ASC,
+                        onClick = { onSortTypeChange(SortType.TITLE_ASC) }
+                    )
 
-                    DropdownMenu(
-                        expanded = showSortMenu,
-                        onDismissRequest = { showSortMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.sort_title_asc)) },
-                            onClick = {
-                                onSortTypeChange(SortType.TITLE_ASC)
-                                showSortMenu = false
-                            },
-                            leadingIcon = {
-                                if (state.sortType == SortType.TITLE_ASC) {
-                                    Icon(Icons.Default.Check, contentDescription = null)
-                                }
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(R.string.sort_artist)) },
-                            onClick = {
-                                onSortTypeChange(SortType.ARTIST_ASC)
-                                showSortMenu = false
-                            },
-                            leadingIcon = {
-                                if (state.sortType == SortType.ARTIST_ASC) {
-                                    Icon(Icons.Default.Check, contentDescription = null)
-                                }
-                            }
-                        )
-                    }
+                    SortChip(
+                        text = stringResource(R.string.sort_artist),
+                        isSelected = state.sortType == SortType.ARTIST_ASC,
+                        onClick = { onSortTypeChange(SortType.ARTIST_ASC) }
+                    )
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
         }
 
@@ -363,6 +345,37 @@ fun formatDuration(milliseconds: Long): String {
     val minutes = totalSeconds / 60
     val seconds = totalSeconds % 60
     return "$minutes:${seconds.toString().padStart(2, '0')}"
+}
+
+@Composable
+fun SortChip(
+    text: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    FilterChip(
+        selected = isSelected,
+        onClick = onClick,
+        label = {
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelMedium
+            )
+        },
+        leadingIcon = if (isSelected) {
+            {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        } else null,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+        )
+    )
 }
 
 @Composable
