@@ -70,4 +70,9 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.google.accompanist:accompanist-permissions:0.32.0")
     implementation("androidx.compose.ui:ui-text-google-fonts:1.9.2")
+
+    // Media3
+    implementation("androidx.media3:media3-exoplayer:1.9.1")
+    implementation("androidx.media3:media3-session:1.9.1")
+    implementation("androidx.media3:media3-ui:1.9.1")
 }

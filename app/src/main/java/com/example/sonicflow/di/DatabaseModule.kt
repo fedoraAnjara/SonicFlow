@@ -14,6 +14,8 @@ import com.example.sonicflow.data.repository.AudioRepositoryImpl
 import com.example.sonicflow.domain.repository.AudioRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import com.example.sonicflow.domain.usecase.GetAudioTracksUseCase
+import com.example.sonicflow.data.repository.MusicPlayerRepositoryImpl
+import com.example.sonicflow.domain.repository.MusicPlayerRepository
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -45,5 +47,13 @@ object DatabaseModule{
         repository: AudioRepository
     ): GetAudioTracksUseCase{
         return GetAudioTracksUseCase(repository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMusicPlayerRepository(
+        @ApplicationContext context: Context
+    ): MusicPlayerRepository {
+        return MusicPlayerRepositoryImpl(context)
     }
 }

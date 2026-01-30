@@ -34,11 +34,16 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
 import androidx.compose.material.icons.filled.Add
+import com.example.sonicflow.domain.model.AudioTrack
+import com.example.sonicflow.domain.repository.MusicPlayerRepository
+import com.example.sonicflow.presentation.player.MiniPlayer
+import com.example.sonicflow.presentation.player.PlayerViewModel
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(
-    viewModel: HomeViewModel = hiltViewModel()
+    viewModel: HomeViewModel = hiltViewModel(),
+    playerViewModel: PlayerViewModel = hiltViewModel()
 ) {
     val permission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         Manifest.permission.READ_MEDIA_AUDIO
@@ -49,6 +54,7 @@ fun HomeScreen(
     val permissionState = rememberPermissionState(permission)
 
     val state by viewModel.state.collectAsState()
+    val playerState by playerViewModel.state.collectAsState()
 
     LaunchedEffect(Unit) {
         if (!permissionState.status.isGranted) {
@@ -62,14 +68,28 @@ fun HomeScreen(
         }
     }
 
-    AudioListContent(
-        state = state,
-        onRetry = {viewModel.loadAudioTracks()},
-        hasPermission = permissionState.status.isGranted,
-        onRequestPermission = { permissionState.launchPermissionRequest() },
-        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-        onSortTypeChange = { viewModel.onSortTypeChange(it) }
-    )
+    Scaffold(
+        bottomBar = {
+            MiniPlayer(
+                currentTrack = playerState.currentTrack,
+                isPlaying = playerState.isPlaying,
+                onPlayPauseClick = { playerViewModel.togglePlayPause() },
+                onPlayerClick = { /* TODO: Ouvrir le lecteur complet */ },
+                modifier = Modifier.navigationBarsPadding()
+            )
+        }
+    ) { paddingValues ->
+        AudioListContent(
+            state = state,
+            onRetry = { viewModel.loadAudioTracks() },
+            hasPermission = permissionState.status.isGranted,
+            onRequestPermission = { permissionState.launchPermissionRequest() },
+            onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+            onSortTypeChange = { viewModel.onSortTypeChange(it) },
+            onPlayTrack = { track -> playerViewModel.playTrack(track) },
+            modifier = Modifier.padding(paddingValues)
+        )
+    }
 }
 
 @Composable
@@ -79,7 +99,9 @@ fun AudioListContent(
     hasPermission: Boolean,
     onRequestPermission: () -> Unit,
     onSearchQueryChange: (String) -> Unit,
-    onSortTypeChange: (SortType) -> Unit
+    onSortTypeChange: (SortType) -> Unit,
+    onPlayTrack: (AudioTrack) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     var showSortMenu by remember { mutableStateOf(false) }
 
@@ -226,7 +248,10 @@ fun AudioListContent(
                     contentPadding = PaddingValues(vertical = 8.dp)
                 ) {
                     items(state.filteredTracks) { track ->
-                        AudioTrackItem(track = track)
+                        AudioTrackItem(
+                            track = track,
+                            onPlayTrack = onPlayTrack
+                            )
                     }
                 }
             }
@@ -235,7 +260,10 @@ fun AudioListContent(
 }
 
 @Composable
-fun AudioTrackItem(track: com.example.sonicflow.domain.model.AudioTrack) {
+fun AudioTrackItem(
+    track: com.example.sonicflow.domain.model.AudioTrack,
+    onPlayTrack: (AudioTrack) -> Unit
+) {
     var showMenu by remember { mutableStateOf(false) }
 
     val albumArtUri = ContentUris.withAppendedId(
@@ -247,7 +275,7 @@ fun AudioTrackItem(track: com.example.sonicflow.domain.model.AudioTrack) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable{/* TODO: Jouer la musique */},
+            .clickable{onPlayTrack(track)},
         color = Color.Transparent
     ) {
         Row(
