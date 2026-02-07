@@ -15,4 +15,5 @@ interface MusicPlayerRepository{
     fun seekTo(position: Long)
     fun playNext()
     fun playPrevious()
+    fun setPlaylist(tracks: List<AudioTrack>, startIndex: Int)
 }

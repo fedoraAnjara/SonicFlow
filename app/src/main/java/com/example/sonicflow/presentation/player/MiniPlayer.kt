@@ -7,7 +7,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,10 +44,11 @@ fun MiniPlayer(
     )
 
     // Dégradé de fond
-    val gradient = Brush.verticalGradient(
+    val gradient = Brush.horizontalGradient(
         colors = listOf(
+            Color(0xFF2D1302).copy(alpha = 0.95f),
             Color.Black.copy(alpha = 0.95f),
-            Color(0xFF1a0a00).copy(alpha = 0.95f)
+
         )
     )
 
@@ -74,7 +78,8 @@ fun MiniPlayer(
                         .size(56.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop,
-                    error = painterResource(R.drawable.msc)
+                    error = rememberVectorPainter(Icons.Default.MusicNote)
+
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -108,16 +113,16 @@ fun MiniPlayer(
                 ) {
                     if (isPlaying) {
                         Icon(
-                            painter = painterResource(id = R.drawable.p),
+                            imageVector = Icons.Default.Pause,
                             contentDescription = "Pause",
-                            tint = Color(0xFFFF9800),
-                            modifier = Modifier.size(18.dp)
+                            tint = Color(0xD0FF9800),
+                            modifier = Modifier.size(28.dp)
                         )
                     } else {
                         Icon(
                             imageVector = Icons.Default.PlayArrow,
                             contentDescription = "Play",
-                            tint = Color(0xFFFF9800),
+                            tint = Color(0xD0FF9800),
                             modifier = Modifier.size(28.dp)
                         )
                     }

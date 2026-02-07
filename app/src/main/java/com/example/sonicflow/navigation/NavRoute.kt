@@ -8,6 +8,7 @@ import com.example.sonicflow.presentation.home.HomeScreen
 import com.example.sonicflow.presentation.signin.SignInScreen
 import com.example.sonicflow.presentation.signup.SignUpScreen
 import com.example.sonicflow.presentation.splash.SplashScreen
+import com.example.sonicflow.presentation.player.FullPlayerScreen
 
 @Composable
 fun NavRoute(
@@ -50,7 +51,14 @@ fun NavRoute(
             )
         }
         composable(route = Screen.Home.route){
-            HomeScreen()
+            HomeScreen(navController = navController)
+        }
+        composable(route = Screen.Player.route) {
+            FullPlayerScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 

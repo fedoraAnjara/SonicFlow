@@ -34,14 +34,25 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import coil.compose.AsyncImage
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.MusicVideo
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import com.example.sonicflow.domain.model.AudioTrack
 import com.example.sonicflow.domain.repository.MusicPlayerRepository
+import com.example.sonicflow.navigation.Screen
 import com.example.sonicflow.presentation.player.MiniPlayer
 import com.example.sonicflow.presentation.player.PlayerViewModel
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen(
+    navController: NavHostController,
     viewModel: HomeViewModel = hiltViewModel(),
     playerViewModel: PlayerViewModel = hiltViewModel()
 ) {
@@ -68,15 +79,21 @@ fun HomeScreen(
         }
     }
 
+    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+
     Scaffold(
         bottomBar = {
-            MiniPlayer(
-                currentTrack = playerState.currentTrack,
-                isPlaying = playerState.isPlaying,
-                onPlayPauseClick = { playerViewModel.togglePlayPause() },
-                onPlayerClick = { /* TODO: Ouvrir le lecteur complet */ },
-                modifier = Modifier.navigationBarsPadding()
-            )
+            if (currentRoute != Screen.Player.route && playerState.currentTrack != null) {
+                MiniPlayer(
+                    currentTrack = playerState.currentTrack,
+                    isPlaying = playerState.isPlaying,
+                    onPlayPauseClick = { playerViewModel.togglePlayPause() },
+                    onPlayerClick = {
+                        navController.navigate(Screen.Player.route)
+                    },
+                    modifier = Modifier.navigationBarsPadding()
+                )
+            }
         }
     ) { paddingValues ->
         AudioListContent(
@@ -86,7 +103,10 @@ fun HomeScreen(
             onRequestPermission = { permissionState.launchPermissionRequest() },
             onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
             onSortTypeChange = { viewModel.onSortTypeChange(it) },
-            onPlayTrack = { track -> playerViewModel.playTrack(track) },
+            onPlayTrack = { track ->
+                val index = state.filteredTracks.indexOf(track)
+                playerViewModel.setPlaylist(state.filteredTracks, index)
+            },
             modifier = Modifier.padding(paddingValues)
         )
     }
@@ -286,15 +306,26 @@ fun AudioTrackItem(
             verticalAlignment = Alignment.CenterVertically
         ){
 
-            AsyncImage(
+            SubcomposeAsyncImage(
                 model = albumArtUri,
                 contentDescription = null,
                 modifier = Modifier
                     .size(56.dp)
                     .clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop,
-                error = painterResource(R.drawable.msc)
-            )
+                contentScale = ContentScale.Crop
+            ) {
+                when (painter.state) {
+                    is AsyncImagePainter.State.Success -> {
+                        SubcomposeAsyncImageContent()
+                    }
+                    else -> {
+                        AlbumArtPlaceholder(
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                }
+            }
+
 
             Spacer(modifier = Modifier.width(12.dp))
 
@@ -405,6 +436,32 @@ fun SortChip(
         )
     )
 }
+
+@Composable
+fun AlbumArtPlaceholder(
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xFF1A1A1A),
+                        Color(0xFF000000)
+                    )
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = Icons.Default.MusicVideo,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.6f),
+            modifier = Modifier.size(32.dp)
+        )
+    }
+}
+
 
 @Composable
 fun PermissionDeniedContent(

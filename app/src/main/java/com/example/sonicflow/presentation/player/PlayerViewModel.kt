@@ -61,6 +61,10 @@ class PlayerViewModel @Inject constructor(
         }
     }
 
+    fun setPlaylist(tracks: List<AudioTrack>, startIndex: Int) {
+        musicPlayerRepository.setPlaylist(tracks, startIndex)
+    }
+
     fun seekTo(position: Long) {
         musicPlayerRepository.seekTo(position)
     }

@@ -102,7 +102,7 @@ fun SplashScreen(
 
         Text(
                text = "SonicFloW",
-               fontFamily = AudiowideFont,
+               //fontFamily = AudiowideFont,
                fontStyle = FontStyle.Italic,
                fontSize = 42.sp,
                fontWeight = FontWeight.ExtraBold,

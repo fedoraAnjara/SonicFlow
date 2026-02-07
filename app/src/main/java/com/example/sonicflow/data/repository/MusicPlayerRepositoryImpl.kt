@@ -17,6 +17,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.media3.common.util.UnstableApi
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.*
 
 @UnstableApi
 @Singleton
@@ -38,12 +41,26 @@ class MusicPlayerRepositoryImpl @Inject constructor(
     private val _duration = MutableStateFlow(0L)
     override val duration: StateFlow<Long> = _duration.asStateFlow()
 
+    private var positionJob: Job? = null
+
     private var playlist = listOf<AudioTrack>()
     private var currentIndex = 0
 
     init {
         initializeController()
     }
+
+    private fun startPositionUpdates() {
+        positionJob?.cancel()
+        positionJob = CoroutineScope(Dispatchers.Main).launch {
+            while (isActive && mediaController?.isPlaying == true) {
+                _currentPosition.value = mediaController?.currentPosition ?: 0L
+                _duration.value = mediaController?.duration ?: 0L
+                delay(300)
+            }
+        }
+    }
+
 
     private fun initializeController() {
         val sessionToken = SessionToken(
@@ -66,7 +83,14 @@ class MusicPlayerRepositoryImpl @Inject constructor(
         mediaController?.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _isPlaying.value = isPlaying
+
+                if (isPlaying) {
+                    startPositionUpdates()
+                } else {
+                    positionJob?.cancel()
+                }
             }
+
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY) {
@@ -91,12 +115,25 @@ class MusicPlayerRepositoryImpl @Inject constructor(
         }
     }
 
+    override fun setPlaylist(tracks: List<AudioTrack>, startIndex: Int) {
+        playlist = tracks
+        currentIndex = startIndex
+        if (tracks.isNotEmpty() && startIndex in tracks.indices) {
+            playTrack(tracks[startIndex])
+        }
+    }
+
     override fun pauseTrack() {
         mediaController?.pause()
+        _isPlaying.value = false
+        positionJob?.cancel()
     }
+
 
     override fun resume() {
         mediaController?.play()
+        _isPlaying.value = true
+        startPositionUpdates()
     }
 
     override fun seekTo(position: Long) {
