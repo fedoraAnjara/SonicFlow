@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -22,7 +23,6 @@ import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.rememberPermissionState
 import com.google.accompanist.permissions.isGranted
 import androidx.compose.ui.res.stringResource
-import androidx.core.util.TimeUtils.formatDuration
 import com.example.sonicflow.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -31,15 +31,10 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
-import coil.compose.AsyncImage
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.MusicVideo
-import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import com.example.sonicflow.domain.model.AudioTrack
-import com.example.sonicflow.domain.repository.MusicPlayerRepository
 import com.example.sonicflow.navigation.Screen
 import com.example.sonicflow.presentation.player.MiniPlayer
 import com.example.sonicflow.presentation.player.PlayerViewModel
@@ -48,6 +43,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.AsyncImagePainter
 import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageContent
+
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -63,53 +59,35 @@ fun HomeScreen(
     }
 
     val permissionState = rememberPermissionState(permission)
-
     val state by viewModel.state.collectAsState()
-    val playerState by playerViewModel.state.collectAsState()
-
-    LaunchedEffect(Unit) {
-        if (!permissionState.status.isGranted) {
-            permissionState.launchPermissionRequest()
-        }
-    }
 
     LaunchedEffect(permissionState.status.isGranted) {
         if (permissionState.status.isGranted) {
             viewModel.loadAudioTracks()
+        } else {
+            permissionState.launchPermissionRequest()
         }
     }
 
-    val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
+    val playerState by playerViewModel.state.collectAsState()
 
-    Scaffold(
-        bottomBar = {
-            if (currentRoute != Screen.Player.route && playerState.currentTrack != null) {
-                MiniPlayer(
-                    currentTrack = playerState.currentTrack,
-                    isPlaying = playerState.isPlaying,
-                    onPlayPauseClick = { playerViewModel.togglePlayPause() },
-                    onPlayerClick = {
-                        navController.navigate(Screen.Player.route)
-                    },
-                    modifier = Modifier.navigationBarsPadding()
-                )
-            }
-        }
-    ) { paddingValues ->
-        AudioListContent(
-            state = state,
-            onRetry = { viewModel.loadAudioTracks() },
-            hasPermission = permissionState.status.isGranted,
-            onRequestPermission = { permissionState.launchPermissionRequest() },
-            onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
-            onSortTypeChange = { viewModel.onSortTypeChange(it) },
-            onPlayTrack = { track ->
+    AudioListContent(
+        state = state,
+        onRetry = { viewModel.loadAudioTracks() },
+        hasPermission = permissionState.status.isGranted,
+        onRequestPermission = { permissionState.launchPermissionRequest() },
+        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+        onSortTypeChange = { viewModel.onSortTypeChange(it) },
+        onPlayTrack = { track ->
+            if (playerState.currentTrack?.id == track.id) {
+                playerViewModel.togglePlayPause()
+            } else {
                 val index = state.filteredTracks.indexOf(track)
                 playerViewModel.setPlaylist(state.filteredTracks, index)
-            },
-            modifier = Modifier.padding(paddingValues)
-        )
-    }
+            }
+        },
+        navController = navController
+    )
 }
 
 @Composable
@@ -121,19 +99,48 @@ fun AudioListContent(
     onSearchQueryChange: (String) -> Unit,
     onSortTypeChange: (SortType) -> Unit,
     onPlayTrack: (AudioTrack) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var showSortMenu by remember { mutableStateOf(false) }
+    modifier: Modifier = Modifier,
+    navController: NavHostController,
 
+
+) {
+    var showSettingsSheet by remember { mutableStateOf(false) }
     Column(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
     ) {
 
-        Text(
-            text = stringResource(R.string.my_library),
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(16.dp, 52.dp, 16.dp, 8.dp)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp, 52.dp, 16.dp, 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.my_library),
+                style = MaterialTheme.typography.headlineMedium
+            )
+
+            // Icône de paramètres
+            IconButton(
+                onClick = { showSettingsSheet = true },
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = CircleShape
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Settings,
+                    contentDescription = "Paramètres",
+                    tint = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+        }
 
         if (hasPermission && state.audioTracks.isNotEmpty()) {
             Column(
@@ -149,13 +156,14 @@ fun AudioListContent(
                         .height(50.dp),
                     placeholder = {
                         Text(
-                        text = stringResource(R.string.search_music),
-                        style = MaterialTheme.typography.bodyMedium
-                    ) },
+                            text = stringResource(R.string.search_music),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
                     leadingIcon = {
                         Icon(
                             imageVector = Icons.Default.Search,
-                            contentDescription = stringResource(R.string.search_music) ,
+                            contentDescription = stringResource(R.string.search_music),
                             modifier = Modifier.size(20.dp)
                         )
                     },
@@ -203,27 +211,7 @@ fun AudioListContent(
 
         when {
             !hasPermission -> {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text(
-                        text = stringResource(R.string.permission_required),
-                        style = MaterialTheme.typography.headlineMedium
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = stringResource(R.string.permission_message),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(24.dp))
-                    Button(onClick = onRequestPermission) {
-                        Text(stringResource(R.string.allow_access))
-                    }
-                }
+                PermissionDeniedContent(onRequestPermission)
             }
             state.isLoading -> {
                 Box(
@@ -271,17 +259,24 @@ fun AudioListContent(
                         AudioTrackItem(
                             track = track,
                             onPlayTrack = onPlayTrack
-                            )
+                        )
                     }
                 }
             }
         }
     }
+    if (showSettingsSheet) {
+        SettingsBottomSheet(
+            navController = navController, // <-- passer le navController
+            onDismiss = { showSettingsSheet = false }
+        )
+    }
+
 }
 
 @Composable
 fun AudioTrackItem(
-    track: com.example.sonicflow.domain.model.AudioTrack,
+    track: AudioTrack,
     onPlayTrack: (AudioTrack) -> Unit
 ) {
     var showMenu by remember { mutableStateOf(false) }
@@ -291,119 +286,112 @@ fun AudioTrackItem(
         track.albumId
     )
 
-    Column{
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable{onPlayTrack(track)},
-        color = Color.Transparent
-    ) {
-        Row(
+    Column {
+        Surface(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp,vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ){
-
-            SubcomposeAsyncImage(
-                model = albumArtUri,
-                contentDescription = null,
+                .fillMaxWidth()
+                .clickable { onPlayTrack(track) },
+            color = Color.Transparent
+        ) {
+            Row(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(4.dp)),
-                contentScale = ContentScale.Crop
+                    .fillMaxSize()
+                    .padding(16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                when (painter.state) {
-                    is AsyncImagePainter.State.Success -> {
-                        SubcomposeAsyncImageContent()
+
+                SubcomposeAsyncImage(
+                    model = albumArtUri,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    contentScale = ContentScale.Crop
+                ) {
+                    when (painter.state) {
+                        is AsyncImagePainter.State.Success -> {
+                            SubcomposeAsyncImageContent()
+                        }
+                        else -> {
+                            AlbumArtPlaceholder(
+                                modifier = Modifier.fillMaxSize()
+                            )
+                        }
                     }
-                    else -> {
-                        AlbumArtPlaceholder(
-                            modifier = Modifier.fillMaxSize()
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = track.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = track.artist,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                        maxLines = 1
+                    )
+                }
+                Box {
+                    IconButton(
+                        onClick = { showMenu = true }
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.more_option),
+                            tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.add_to_playlist)) },
+                            onClick = {
+                                showMenu = false
+                                //TODO: ajouter a la playlist
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.share)) },
+                            onClick = {
+                                showMenu = false
+                                //TODO: partager
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.details)) },
+                            onClick = {
+                                showMenu = false
+                                //TODO: details
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.delete)) },
+                            onClick = {
+                                showMenu = false
+                                //TODO: supprimer
+                            }
                         )
                     }
                 }
             }
-
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(
-                text = track.title,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-            Text(
-                text = track.artist,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                maxLines = 1
-            )
         }
-        Box {
-            IconButton(
-                onClick = {showMenu = true}
-            ) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.more_option),
-                    tint = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
-            }
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { showMenu = false }
-
-            ) {
-                DropdownMenuItem(
-                    text = {Text(stringResource(R.string.add_to_playlist))},
-                    onClick = {
-                        showMenu = false
-                        //TODO: ajouter a la playlist
-                    }
-                )
-                DropdownMenuItem(
-                    text = {Text(stringResource(R.string.share))},
-                    onClick = {
-                        showMenu = false
-                        //TODO: partager
-                    }
-                )
-                DropdownMenuItem(
-                    text = {Text(stringResource(R.string.details))},
-                    onClick = {
-                        showMenu = false
-                        //TODO: details
-                    }
-                )
-                DropdownMenuItem(
-                    text = {Text(stringResource(R.string.delete))},
-                    onClick = {
-                        showMenu = false
-                        //TODO: supprimer
-                    }
-                )
-            }
-        }
-    }}
-    HorizontalDivider(
-        modifier = Modifier.padding(horizontal = 16.dp),
-        thickness = 0.5.dp,
-        color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
-    )
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            thickness = 0.5.dp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f)
+        )
     }
-}
-
-fun formatDuration(milliseconds: Long): String {
-    val totalSeconds = milliseconds / 1000
-    val minutes = totalSeconds / 60
-    val seconds = totalSeconds % 60
-    return "$minutes:${seconds.toString().padStart(2, '0')}"
 }
 
 @Composable
@@ -462,7 +450,6 @@ fun AlbumArtPlaceholder(
     }
 }
 
-
 @Composable
 fun PermissionDeniedContent(
     onRequestPermission: () -> Unit
@@ -488,4 +475,5 @@ fun PermissionDeniedContent(
             Text(stringResource(R.string.allow_access))
         }
     }
+
 }

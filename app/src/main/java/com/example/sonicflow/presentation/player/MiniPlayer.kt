@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -34,7 +35,8 @@ fun MiniPlayer(
     isPlaying: Boolean,
     onPlayPauseClick: () -> Unit,
     onPlayerClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNextClick: () -> Unit,
 ) {
     if (currentTrack == null) return
 
@@ -51,18 +53,31 @@ fun MiniPlayer(
 
         )
     )
-
-    Surface(
+    Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(72.dp)
-            .clickable { onPlayerClick() },
-        shadowElevation = 8.dp
-    ) {
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ){
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .shadow(
+                    elevation = 8.dp,
+                    shape = RoundedCornerShape(25.dp),
+                    clip = false
+                )
+                .clip(RoundedCornerShape(25.dp))
+                .clickable { onPlayerClick() },
+            tonalElevation = 0.dp,
+
+        ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(gradient)
+
         ) {
             Row(
                 modifier = Modifier
@@ -75,11 +90,10 @@ fun MiniPlayer(
                     model = albumArtUri,
                     contentDescription = "Album art",
                     modifier = Modifier
-                        .size(56.dp)
+                        .size(52.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop,
                     error = rememberVectorPainter(Icons.Default.MusicNote)
-
                 )
 
                 Spacer(modifier = Modifier.width(12.dp))
@@ -127,7 +141,22 @@ fun MiniPlayer(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.width(5.dp))
+                IconButton(
+                    onClick = { onNextClick() },
+                    modifier = Modifier
+                        .size(40.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.SkipNext,
+                        contentDescription = "Next",
+                        tint = Color(0xD0FF9800),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
             }
         }
     }
-}
+}}

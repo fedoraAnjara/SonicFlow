@@ -150,6 +150,7 @@ fun FullPlayerScreen(
                 WaveformView(
                     progress = if (state.duration > 0) state.currentPosition.toFloat() / state.duration else 0f,
                     isPlaying = state.isPlaying,
+                    waveformData = state.waveformData,
                     onSeek = { progress ->
                         viewModel.seekTo((progress * state.duration).toLong())
                     },
@@ -342,10 +343,10 @@ fun FullPlayerScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Slider(
-                        value = volume,
+                        value = state.volume,
                         onValueChange = {
-                            volume = it
                             isVolumeHovering = true
+                            viewModel.setVolume(it)
                         },
                         onValueChangeFinished = {
                             isVolumeHovering = false

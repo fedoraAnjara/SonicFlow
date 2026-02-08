@@ -1,7 +1,10 @@
 package com.example.sonicflow.presentation.player
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sonicflow.data.audio.WaveformExtractor
+import com.example.sonicflow.data.repository.WaveformRepository
 import com.example.sonicflow.domain.model.AudioTrack
 import com.example.sonicflow.domain.repository.MusicPlayerRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,11 +16,16 @@ import javax.inject.Inject
 
 @HiltViewModel
 class PlayerViewModel @Inject constructor(
-    private val musicPlayerRepository: MusicPlayerRepository
-) : ViewModel() {
+    private val musicPlayerRepository: MusicPlayerRepository,
+    private val waveformRepository: WaveformRepository,
+    application: Application
+) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state.asStateFlow()
+
+    private val waveformCache = mutableMapOf<String, List<Float>>()
+    private val waveformExtractor = WaveformExtractor(application.applicationContext)
 
     init {
         observePlayerState()
@@ -27,6 +35,8 @@ class PlayerViewModel @Inject constructor(
         viewModelScope.launch {
             musicPlayerRepository.currentTrack.collect { track ->
                 _state.value = _state.value.copy(currentTrack = track)
+                // Charger la waveform automatiquement quand la track change
+                track?.let { loadWaveform(it.data) }
             }
         }
 
@@ -46,6 +56,20 @@ class PlayerViewModel @Inject constructor(
             musicPlayerRepository.duration.collect { duration ->
                 _state.value = _state.value.copy(duration = duration)
             }
+        }
+
+        viewModelScope.launch {
+            musicPlayerRepository.volume.collect { volume ->
+                _state.value = _state.value.copy(volume = volume)
+            }
+        }
+    }
+
+    private fun loadWaveform(audioPath: String) {
+        viewModelScope.launch {
+            //récupération depuis Room ou génération si nécessaire
+            val waveform = waveformRepository.getWaveform(audioPath)
+            _state.value = _state.value.copy(waveformData = waveform)
         }
     }
 
@@ -69,11 +93,23 @@ class PlayerViewModel @Inject constructor(
         musicPlayerRepository.seekTo(position)
     }
 
+    fun setVolume(volume: Float) {
+        musicPlayerRepository.setVolume(volume)
+    }
+
     fun playNext() {
         musicPlayerRepository.playNext()
     }
 
     fun playPrevious() {
         musicPlayerRepository.playPrevious()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Nettoyer le cache si trop gros
+        if (waveformCache.size > 20) {
+            waveformCache.clear()
+        }
     }
 }

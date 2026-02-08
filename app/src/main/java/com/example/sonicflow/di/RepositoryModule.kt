@@ -1,0 +1,20 @@
+package com.example.sonicflow.di
+
+import com.example.sonicflow.data.repository.PlaylistRepositoryImpl
+import com.example.sonicflow.domain.repository.PlaylistRepository
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class RepositoryModule {
+
+    @Binds
+    @Singleton
+    abstract fun bindPlaylistRepository(
+        impl: PlaylistRepositoryImpl
+    ): PlaylistRepository
+}

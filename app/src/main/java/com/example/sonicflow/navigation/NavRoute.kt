@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.example.sonicflow.presentation.home.HomeScreen
 import com.example.sonicflow.presentation.signin.SignInScreen
 import com.example.sonicflow.presentation.signup.SignUpScreen
 import com.example.sonicflow.presentation.splash.SplashScreen
@@ -31,11 +30,13 @@ fun NavRoute(
         composable(route = Screen.SignIn.route){
             SignInScreen(
                 onNavigateToSignUp = {
-                    navController.navigate(Screen.SignUp.route) },
+                    navController.navigate(Screen.SignUp.route)
+                },
                 onSignInSuccess = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.SignIn.route) {inclusive = true}
-                }}
+                        popUpTo(Screen.SignIn.route) { inclusive = true }
+                    }
+                }
             )
         }
         composable(route = Screen.SignUp.route){
@@ -50,8 +51,9 @@ fun NavRoute(
                 }
             )
         }
+        // ✨ MainScreen avec Bottom Navigation
         composable(route = Screen.Home.route){
-            HomeScreen(navController = navController)
+            MainScreen(mainNavController = navController)
         }
         composable(route = Screen.Player.route) {
             FullPlayerScreen(
@@ -61,5 +63,4 @@ fun NavRoute(
             )
         }
     }
-
 }

@@ -10,32 +10,46 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import com.example.sonicflow.domain.model.AudioTrack
+import com.example.sonicflow.domain.repository.MusicPlayerRepository
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getAudioTracksUseCase: GetAudioTracksUseCase
+    private val getAudioTracksUseCase: GetAudioTracksUseCase,
+    private val musicPlayerRepository: MusicPlayerRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
+    private var isInitialized = false
 
     init {
         loadAudioTracks()
     }
 
     fun loadAudioTracks() {
+        if (isInitialized && _state.value.audioTracks.isNotEmpty()) {
+            return
+        }
+
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
                 val tracks = getAudioTracksUseCase()
+                val shouldRestore = !isInitialized
+                isInitialized = true
+
                 _state.value = _state.value.copy(
                     audioTracks = tracks,
-                    filteredTracks = tracks,  // Au début, filteredTracks = tous
+                    filteredTracks = tracks,
                     isLoading = false
                 )
-                // Appliquer le tri actuel
                 applySortAndFilter()
+
+
+                if (shouldRestore && tracks.isNotEmpty()) {
+                    musicPlayerRepository.restorePlaybackState(tracks)
+                }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,

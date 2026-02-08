@@ -2,6 +2,7 @@ package com.example.sonicflow.data.repository
 
 import android.content.ComponentName
 import android.content.Context
+import android.media.MediaPlayer
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
@@ -17,15 +18,32 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 import androidx.media3.common.util.UnstableApi
+import com.example.sonicflow.data.audio.WaveformExtractor
+import com.example.sonicflow.data.preferences.PlaybackPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.Flow
 
 @UnstableApi
 @Singleton
 class MusicPlayerRepositoryImpl @Inject constructor(
-    private val context: Context
-) : MusicPlayerRepository{
+    private val mediaPlayer: MediaPlayer,
+    private val context: Context,
+    private val waveformExtractor: WaveformExtractor,
+    private val playbackPreferences: PlaybackPreferences
+) : MusicPlayerRepository {
+
+    private val _volume = MutableStateFlow(0.7f)
+    override val volume: Flow<Float> = _volume.asStateFlow()
+
+    private val _waveformData = MutableStateFlow<List<Float>>(emptyList())
+    override val waveformData: StateFlow<List<Float>> = _waveformData.asStateFlow()
+
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     private var mediaController: MediaController? = null
     private var controllerFuture: ListenableFuture<MediaController>? = null
 
@@ -45,10 +63,50 @@ class MusicPlayerRepositoryImpl @Inject constructor(
 
     private var playlist = listOf<AudioTrack>()
     private var currentIndex = 0
+    private fun startAutoSave() {
+        scope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(5000) // Sauvegarder toutes les 5 secondes
+                val track = _currentTrack.value
+                if (track != null) {
+                    playbackPreferences.savePlaybackState(
+                        trackId = track.id,
+                        position = _currentPosition.value,
+                        isPlaying = _isPlaying.value
+                    )
+                }
+            }
+        }
+    }
 
     init {
         initializeController()
+        startAutoSave()
     }
+    override suspend fun restorePlaybackState(allTracks: List<AudioTrack>) {
+        playbackPreferences.lastTrackId.collect { trackId ->
+            if (trackId != null) {
+                val track = allTracks.find { it.id == trackId }
+                if (track != null) {
+                    playTrack(track)
+
+                    // Restaurer la position
+                    playbackPreferences.lastPosition.collect { position ->
+                        seekTo(position)
+
+                        // Restaurer l'état play/pause
+                        playbackPreferences.wasPlaying.collect { wasPlaying ->
+                            if (!wasPlaying) {
+                                pauseTrack()
+                            }
+                        }
+                        return@collect // Sort après la première valeur
+                    }
+                }
+            }
+        }
+    }
+
 
     private fun startPositionUpdates() {
         positionJob?.cancel()
@@ -60,7 +118,6 @@ class MusicPlayerRepositoryImpl @Inject constructor(
             }
         }
     }
-
 
     private fun initializeController() {
         val sessionToken = SessionToken(
@@ -91,13 +148,18 @@ class MusicPlayerRepositoryImpl @Inject constructor(
                 }
             }
 
-
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_READY) {
                     _duration.value = mediaController?.duration ?: 0L
                 }
             }
         })
+    }
+
+    override fun setVolume(volume: Float) {
+        val clampedVolume = volume.coerceIn(0f, 1f)
+        _volume.value = clampedVolume
+        mediaController?.volume = clampedVolume
     }
 
     override fun playTrack(track: AudioTrack) {
@@ -112,6 +174,11 @@ class MusicPlayerRepositoryImpl @Inject constructor(
             setMediaItem(mediaItem)
             prepare()
             play()
+        }
+
+        // Générer la waveform en arrière-plan
+        scope.launch {
+            generateWaveform(track.data)
         }
     }
 
@@ -129,6 +196,12 @@ class MusicPlayerRepositoryImpl @Inject constructor(
         positionJob?.cancel()
     }
 
+    override suspend fun generateWaveform(audioPath: String) {
+        withContext(Dispatchers.IO) {
+            val waveform = waveformExtractor.extractWaveform(audioPath, targetSamples = 100)
+            _waveformData.value = waveform
+        }
+    }
 
     override fun resume() {
         mediaController?.play()
@@ -155,7 +228,9 @@ class MusicPlayerRepositoryImpl @Inject constructor(
     }
 
     fun release() {
+        positionJob?.cancel()
+        scope.cancel()
         MediaController.releaseFuture(controllerFuture ?: return)
         mediaController = null
     }
-    }
+}
