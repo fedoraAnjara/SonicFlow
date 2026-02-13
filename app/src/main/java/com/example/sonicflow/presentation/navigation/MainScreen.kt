@@ -62,6 +62,7 @@ fun MainScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color.White)
+                    .navigationBarsPadding()
             ) {
                 // MiniPlayer (si une piste joue)
                 if (playerState.currentTrack != null) {
@@ -92,7 +93,7 @@ fun MainScreen(
                 HomeScreen(navController = mainNavController)
             }
             composable(BottomNavScreen.Playlists.route) {
-                PlaylistsScreen()
+                PlaylistsScreen(navController = mainNavController)
             }
         }
     }

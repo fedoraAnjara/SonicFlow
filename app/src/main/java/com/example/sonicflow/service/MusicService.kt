@@ -16,35 +16,91 @@ import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import com.example.sonicflow.MainActivity
 import com.example.sonicflow.R
+import com.example.sonicflow.data.audio.AudioFocusManager
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
-class MusicService : MediaSessionService(){
+class MusicService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
-
     private lateinit var player: ExoPlayer
 
-    override  fun  onCreate(){
+    @Inject
+    lateinit var audioFocusManager: AudioFocusManager
+
+    private val CHANNEL_ID = "music_channel"
+    private val NOTIFICATION_ID = 1
+
+    override fun onCreate() {
         super.onCreate()
         initializePlayer()
+        setupAudioFocusCallbacks()
         initializeMediaSession()
         createNotificationChannel()
         startForeground(NOTIFICATION_ID, createNotification())
     }
-    private  fun initializePlayer(){
+
+    private fun initializePlayer() {
         val audioAttributes = AudioAttributes.Builder()
             .setContentType(C.AUDIO_CONTENT_TYPE_MUSIC)
             .setUsage(C.USAGE_MEDIA)
             .build()
 
         player = ExoPlayer.Builder(this)
-            .setAudioAttributes(audioAttributes,true)
+            .setAudioAttributes(audioAttributes, false) // false car on gère manuellement
             .setHandleAudioBecomingNoisy(true)
             .build()
+
+        // Écouter les changements d'état du player
+        player.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_READY -> {
+                        // Le player est prêt
+                    }
+                    Player.STATE_ENDED -> {
+                        // Lecture terminée
+                        audioFocusManager.abandonAudioFocus()
+                    }
+                }
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) {
+                    // Demander le focus audio quand on commence à jouer
+                    if (!audioFocusManager.requestAudioFocus()) {
+                        // Si on n'obtient pas le focus, mettre en pause
+                        player.pause()
+                    }
+                }
+            }
+        })
     }
 
-    private  val CHANNEL_ID = "music_channel"
-    private  val NOTIFICATION_ID = 1
+    private fun setupAudioFocusCallbacks() {
+        audioFocusManager.setCallbacks(
+            onFocusLost = {
+                // Perte permanente du focus - arrêter la lecture
+                player.pause()
+            },
+            onFocusGained = {
+                // Récupération du focus - reprendre la lecture si c'était en cours
+                if (!player.isPlaying && player.playbackState == Player.STATE_READY) {
+                    player.play()
+                }
+            },
+            onFocusLossTransient = {
+                // Perte temporaire (appel) - mettre en pause
+                if (player.isPlaying) {
+                    player.pause()
+                }
+            },
+            onFocusLossTransientCanDuck = {
+                // Notification - réduire le volume
+                player.volume = 0.3f
+            }
+        )
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -69,9 +125,9 @@ class MusicService : MediaSessionService(){
             .build()
     }
 
-    private fun initializeMediaSession(){
+    private fun initializeMediaSession() {
         val sessionActivityIntent = Intent(this, MainActivity::class.java)
-        val sessionActivityPendingIntent= PendingIntent.getActivity(
+        val sessionActivityPendingIntent = PendingIntent.getActivity(
             this,
             0,
             sessionActivityIntent,
@@ -81,17 +137,21 @@ class MusicService : MediaSessionService(){
             .setSessionActivity(sessionActivityPendingIntent)
             .build()
     }
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession
     }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
         player.stop()
-        stopForeground(true)
+        audioFocusManager.abandonAudioFocus()
+        stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         super.onTaskRemoved(rootIntent)
     }
 
-    override fun onDestroy(){
+    override fun onDestroy() {
+        audioFocusManager.abandonAudioFocus()
         player.release()
         mediaSession?.release()
         mediaSession = null

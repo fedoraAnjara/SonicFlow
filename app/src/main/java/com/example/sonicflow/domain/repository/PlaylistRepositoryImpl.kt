@@ -9,6 +9,7 @@ import com.example.sonicflow.domain.model.PlaylistWithTracks
 import com.example.sonicflow.domain.repository.AudioRepository
 import com.example.sonicflow.domain.repository.PlaylistRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -21,11 +22,13 @@ class PlaylistRepositoryImpl @Inject constructor(
     override fun getAllPlaylists(): Flow<List<Playlist>> {
         return playlistDao.getAllPlaylists().map { entities ->
             entities.map { entity ->
+                // Récupérer le nombre de pistes pour chaque playlist
+                val trackIds = playlistDao.getTrackIdsForPlaylistOnce (entity.id)
                 Playlist(
                     id = entity.id,
                     name = entity.name,
                     createdAt = entity.createdAt,
-                    trackCount = 0
+                    trackCount = trackIds.size
                 )
             }
         }

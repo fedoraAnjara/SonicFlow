@@ -1,13 +1,17 @@
 package com.example.sonicflow.navigation
 
+import android.R.attr.type
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.sonicflow.presentation.signin.SignInScreen
 import com.example.sonicflow.presentation.signup.SignUpScreen
 import com.example.sonicflow.presentation.splash.SplashScreen
 import com.example.sonicflow.presentation.player.FullPlayerScreen
+import com.example.sonicflow.presentation.playlist.PlaylistDetailScreen
 
 @Composable
 fun NavRoute(
@@ -37,6 +41,20 @@ fun NavRoute(
                         popUpTo(Screen.SignIn.route) { inclusive = true }
                     }
                 }
+            )
+        }
+        composable(
+            route = "playlist_detail/{playlistId}",
+            arguments = listOf(
+                navArgument("playlistId") {
+                    type = NavType.LongType
+                }
+            )
+        ) { backStackEntry ->
+            val playlistId = backStackEntry.arguments?.getLong("playlistId") ?: return@composable
+            PlaylistDetailScreen(
+                playlistId = playlistId,
+                onBackClick = { navController.navigateUp() }
             )
         }
         composable(route = Screen.SignUp.route){

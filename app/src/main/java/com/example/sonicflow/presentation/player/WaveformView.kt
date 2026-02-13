@@ -1,6 +1,11 @@
 package com.example.sonicflow.presentation.player
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -68,22 +73,17 @@ fun WaveformView(
                 val x = index * barWidth + barWidth / 2
                 val normalizedIndex = index.toFloat() / barCount
 
-                // Utiliser directement la vraie donnée audio sans modification
-                // Plus la valeur est haute, plus la barre est grande
                 val barMaxHeight = height * 0.75f
                 val actualBarHeight = barHeight * barMaxHeight / 2
 
-                // Distance de la position de lecture pour l'effet de focus
                 val distanceFromProgress = abs(normalizedIndex - progress)
 
-                // Couleur selon si c'est joué ou non
                 val baseColor = if (normalizedIndex <= progress) {
-                    Color(0xFFFF6600) // Orange pour joué
+                    Color(0xFFFF6600)
                 } else {
-                    Color.White.copy(alpha = 0.35f) // Blanc transparent pour non joué
+                    Color.White.copy(alpha = 0.35f)
                 }
 
-                // Intensité légèrement augmentée près de la tête de lecture (seulement si en lecture)
                 val focusIntensity = if (isPlaying && distanceFromProgress < 0.1f) {
                     1f + (1f - distanceFromProgress / 0.1f) * 0.2f
                 } else {
@@ -92,10 +92,9 @@ fun WaveformView(
 
                 val finalHeight = actualBarHeight * focusIntensity
 
-                // Opacité augmentée pour les parties jouées
                 val alpha = if (normalizedIndex <= progress) {
                     if (distanceFromProgress < 0.05f && isPlaying) {
-                        1f // Pleine opacité près de la tête de lecture
+                        1f
                     } else {
                         0.85f
                     }
@@ -105,7 +104,6 @@ fun WaveformView(
 
                 val color = baseColor.copy(alpha = alpha)
 
-                // Barre principale - représentation fidèle de l'audio
                 drawLine(
                     color = color,
                     start = Offset(x, centerY - finalHeight),
@@ -114,7 +112,6 @@ fun WaveformView(
                     cap = StrokeCap.Round
                 )
 
-                // Léger glow uniquement autour de la position de lecture active
                 if (isPlaying && distanceFromProgress < 0.04f) {
                     val glowAlpha = (1f - distanceFromProgress / 0.04f) * 0.3f
                     drawLine(
@@ -130,7 +127,6 @@ fun WaveformView(
             // Indicateur de progression
             val progressX = progress * width
 
-            // Glow animé uniquement en lecture
             if (isPlaying) {
                 drawCircle(
                     color = Color(0xFFFF6600).copy(alpha = 0.4f * progressGlow),
@@ -139,14 +135,12 @@ fun WaveformView(
                 )
             }
 
-            // Cercle blanc
             drawCircle(
                 color = Color.White,
                 radius = 7f,
                 center = Offset(progressX, centerY)
             )
 
-            // Point central orange
             drawCircle(
                 color = Color(0xFFFF6600),
                 radius = 3.5f,

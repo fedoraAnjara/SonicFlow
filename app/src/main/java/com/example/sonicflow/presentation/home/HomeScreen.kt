@@ -82,8 +82,9 @@ fun HomeScreen(
             if (playerState.currentTrack?.id == track.id) {
                 playerViewModel.togglePlayPause()
             } else {
-                val index = state.filteredTracks.indexOf(track)
-                playerViewModel.setPlaylist(state.filteredTracks, index)
+
+                val trackIndex = state.filteredTracks.indexOf(track)
+                playerViewModel.setQueueAndPlay(state.filteredTracks, trackIndex)
             }
         },
         navController = navController

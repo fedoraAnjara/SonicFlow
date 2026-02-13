@@ -7,6 +7,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.room.Room
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.sonicflow.data.audio.AudioFocusManager
 import com.example.sonicflow.data.audio.WaveformExtractor
 import com.example.sonicflow.data.local.AppDatabase
 import com.example.sonicflow.data.local.DAO.PlaylistDao
@@ -103,6 +104,15 @@ object DatabaseModule {
         return MediaPlayer()
     }
 
+    @Provides
+    @Singleton
+    fun provideAudioFocusManager(
+        @ApplicationContext context: Context
+    ): AudioFocusManager {
+        return AudioFocusManager(context)
+    }
+
+
     @UnstableApi
     @Provides
     @Singleton
@@ -110,8 +120,9 @@ object DatabaseModule {
         mediaPlayer: MediaPlayer,
         @ApplicationContext context: Context,
         waveformExtractor: WaveformExtractor,
+        audioFocusManager: AudioFocusManager,
         playbackPreferences: PlaybackPreferences
     ): MusicPlayerRepository {
-        return MusicPlayerRepositoryImpl(mediaPlayer, context, waveformExtractor,playbackPreferences)
+        return MusicPlayerRepositoryImpl(mediaPlayer, context, waveformExtractor,audioFocusManager, playbackPreferences,)
     }
 }
